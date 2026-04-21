@@ -1,21 +1,13 @@
+hot_news_mcp_server_config = {
+    "transport": "sse",  # 注意：ModelScope 托管版通常使用 SSE 协议
+    "url": "https://mcp.api-inference.modelscope.net/c40013eda8b94a/sse"
+    }
 
-
-
-gaode_mcp_server_config = {  # 高德地图MCP服务端 里面有各种高德给你提供公交、地铁、公交、驾车、步行、骑行、POI搜索、IP定位、逆地理编码、云图服务、云图审图、云图审
-    "url": "https://mcp.amap.com/mcp?key=01467c30e6e6d2cca314e3b657de3fbd",
-    "transport": "streamable_http",
+xhs_mcp_server_config = {        # 小红书 - 本地服务，先启动再用
+    "transport": "stdio",
+    "command": "uvx",
+    "args": ["--from", "xiaohongshu-automation", "xhs-mcp"],
+    "env": {
+        "FASTAPI_URL": "http://localhost:8000"  # 你实际跑在8000，保持不变
+    }
 }
-
-
-# 12306的MCP服务端（工具的配置）
-my12306_mcp_server_config = {
-    "url": "https://mcp.api-inference.modelscope.net/84c80bfb816644/mcp",
-    "transport": "streamable_http",
-}
-
-
-# 数据分析报表的MCP服务端（工具的配置）
-# analysis_mcp_server_config = {
-#     "url": "https://mcp.api-inference.modelscope.net/312fc85d97954a/sse",
-#     "transport": "sse",
-# }

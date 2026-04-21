@@ -1,4 +1,19 @@
-.venv/
+# 1. 环境变量与私密配置 (最高优先级)
 .env
-.idea/
+cookies/
+pre_publish_images/
+
+# 2. Python 虚拟环境与缓存
+.venv/
 __pycache__/
+*.pyc
+*.egg-info/
+agent.egg-info/
+
+# 3. 本地运行时数据与状态 (LangGraph)
+.langgraph_api/
+*.pckl
+
+# 4. IDE 与编辑器配置
+.idea/
+.vscode/

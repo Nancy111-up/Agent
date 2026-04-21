@@ -2,8 +2,11 @@ from langchain.agents import create_agent, AgentState
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from agent.llm.log_utils import log
 from agent.llm.my_llm import llm
-from agent.mcp_tool_config import gaode_mcp_server_config, my12306_mcp_server_config
-#, analysis_mcp_server_config
+# 顶部 import 改为
+from agent.mcp_tool_config import (
+    hot_news_mcp_server_config,
+    xhs_mcp_server_config
+)
 from agent.skills_list import SKILLS
 from langchain.agents.middleware import AgentMiddleware, ModelRequest, ModelResponse
 from langchain_core.messages import SystemMessage, ToolMessage
@@ -25,9 +28,8 @@ class SkillState(AgentState):
 def get_tools_by_skill(skill_name: str, all_tools: Dict[str, List[BaseTool]]) -> List[BaseTool]:
     """根据技能名称获取对应的工具列表"""
     skill_tool_mapping = {
-        "gaode_navigation": all_tools.get("gaode", []),
-        "railway_booking": all_tools.get("12306", [])
-        # "data_analysis": all_tools.get("fenxi", [])
+        "trend_hunter": all_tools.get("trend_data", []),    
+        "xhs_creator": all_tools.get("xhs_publish", [])
     }
     return skill_tool_mapping.get(skill_name, [])
 
@@ -298,32 +300,24 @@ async def load_skill(skill_name: str, tool_call_id: Annotated[str, InjectedToolC
 async def create_skills_based_agent():
     # 创建MCP客户端获取所有工具
     mcp_client = MultiServerMCPClient({
-        "gaode": gaode_mcp_server_config,
-        "12306": my12306_mcp_server_config
-        # "fenxi": analysis_mcp_server_config,
-    })
+        "trend_data": hot_news_mcp_server_config,
+        "xhs_publish": xhs_mcp_server_config
+})
 
-    # 获取所有工具并按服务器分类
-    gaode_tools = await mcp_client.get_tools(server_name="gaode")
-    railway_tools = await mcp_client.get_tools(server_name="12306")
-    # fenxi_tools = await mcp_client.get_tools(server_name="fenxi")
+    trend_tools = await mcp_client.get_tools(server_name="trend_data")   # 改成 trend_tools
+    xhs_tools = await mcp_client.get_tools(server_name="xhs_publish")    # 改成 xhs_tools
 
-    print(f'所有工具数量 - 高德: {len(gaode_tools)}, 铁路: {len(railway_tools)}')
-    # , 分析: {len(fenxi_tools)}')
+    print(f'所有工具数量 - 热点: {len(trend_tools)}, 小红书: {len(xhs_tools)}')
 
-    # 验证工具名称
     print("工具名称验证:")
-    for i, tool in enumerate(gaode_tools + railway_tools ):
-    # + fenxi_tools):
+    for i, tool in enumerate(trend_tools + xhs_tools):
         tool_name = getattr(tool, 'name', '未知名称')
         print(f"工具 {i + 1}: {tool_name}")
 
-    # 按类别组织工具
     categorized_tools = {
-        "gaode": gaode_tools,
-        "12306": railway_tools
-        # "fenxi": fenxi_tools
-    }
+        "trend_data": trend_tools,   
+        "xhs_publish": xhs_tools     
+}
 
     # 创建具备真正技能支持的单智能体
     agent = create_agent(
@@ -331,25 +325,22 @@ async def create_skills_based_agent():
         tools=[load_skill],  # 初始只暴露load_skill工具
         middleware=[SkillMiddleware(categorized_tools)],
         state_schema=SkillState,
-        system_prompt="""您是一个多功能智能助手，采用渐进式技能加载架构。
+        system_prompt="""您是一个资深的小红书爆款操盘手，负责全自动自媒体运营，采用渐进式技能加载架构。
 
-请严格遵循以下工作流程：
-1. 首先分析用户请求属于哪个技能领域
-2. 使用load_skill工具加载相应的技能说明
-3. 技能加载后，系统会自动提供该领域的专用工具
-4. 按照技能说明中的指导使用合适的工具
-5. 提供专业、准确的回答
+请严格遵循以下工作流程执行日常运营：
+1. 发现热点：使用 `load_skill` 加载 "trend_hunter" 技能，调用相关工具搜集热点，并自主决定 1 个今天的最佳选题。
+2. 创作发布：有了选题后，使用 `load_skill` 加载 "xhs_creator" 技能，生成网感标题、Emoji排版的正文和标签，并调用工具发布。
 
-可用技能领域：
-- 高德导航 (gaode_navigation): 地图导航、路径规划
-- 铁路查询 (railway_booking): 火车票查询、预订
-- 数据分析 (data_analysis): 数据统计、分析报告
-
-请先加载技能，再使用相应工具！""",
+请注意：你是全自动运营的，不要询问用户意见，请自己发现热点、自己决策、自己创作并发布。现在，请开始今天的运营工作！
+另外请先加载技能，再使用相应工具！"""
     )
 
     return agent
 
 
-# 创建基于Skills架构的智能体
-skills_agent = asyncio.run(create_skills_based_agent())
+async def get_agent():
+    """供其他模块 import 时使用：agent = await get_agent()"""
+    return await create_skills_based_agent()
+
+if __name__ == "__main__":
+    skills_agent = asyncio.run(create_skills_based_agent())
